@@ -1,286 +1,451 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>4월 식단 트래커</title>
-    
-    <meta name="theme-color" content="#1e40af">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIjTsm5Qg7Iud64uoIO2KuOuhnOy7pCIsCiAgInNob3J0X25hbWUiOiAi7Iud64uo7Yq466CI7LusIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmOGZhZmMiLAogICJ0aGVtZV9jb2xvciI6ICIjMWU0MGFmIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9jZG4taWNvbnMtcG5nLmZsaXRpY29uLmNvbS81MTIvMjg1OS8yODU5MTQ0LnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
-
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <style>
-        body { margin: 0; padding: 0; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        /* Pretendard 폰트 시뮬레이션 */
-        * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useMemo, useCallback, useEffect } = React;
-
-        // ── 데이터 (원본 JSX와 동일) ──────────────────────────────────────────────
-        const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
-
-        const BREAKFASTS = [
-            { id: "bf1", name: "삶은 달걀 2개 + 우유", items: [["삶은 달걀 2개",140,12,0,10],["우유 200ml",130,6,10,7]] },
-            { id: "bf2", name: "프로틴 쉐이크 + 바나나", items: [["프로틴 쉐이크",150,25,5,3],["바나나 1개",100,1,26,0]] },
-            { id: "bf3", name: "그릭요거트 + 아몬드", items: [["그릭요거트 200g",120,20,7,1],["아몬드 10알",70,3,2,6]] },
-            { id: "bf4", name: "두유 + 삶은 달걀 2개", items: [["두유 1팩",120,8,10,5],["삶은 달걀 2개",140,12,0,10]] },
-            { id: "bf5", name: "통밀토스트 + 삶은 달걀 2개", items: [["통밀토스트 1장",80,3,14,2],["삶은 달걀 2개",140,12,0,10]] },
-            { id: "bf6", name: "프로틴바 1개", items: [["프로틴바 1개",200,22,20,6]] },
-            { id: "bf7", name: "바나나 + 우유", items: [["바나나 1개",100,1,26,0],["우유 200ml",130,6,10,7]] },
-            { id: "bf0", name: "스킵 (안 먹음)", items: [] },
-        ];
-
-        const LUNCHES = [
-            { id:"lu1", name:"제육볶음 도시락", items:[["잡곡밥 2/3",210,5,46,1],["제육볶음 130g",235,22,8,13],["배추김치",15,1,3,0],["콩나물무침",30,3,3,1]] },
-            { id:"lu2", name:"소불고기 도시락", items:[["현미밥 2/3",200,4,44,1],["소불고기 130g",215,24,8,10],["시금치나물",25,2,3,1],["깍두기",15,1,3,0]] },
-            { id:"lu3", name:"참치캔 볶음 정식", items:[["현미밥 2/3",200,4,44,1],["참치캔 볶음",180,25,5,7],["무생채",20,1,4,0],["순두부찌개",100,8,5,5]] },
-            { id:"lu4", name:"닭가슴살 덮밥", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 간장조림 150g",180,34,5,2],["계란프라이 1개",90,6,0,7],["김치",15,1,3,0]] },
-            { id:"lu5", name:"소고기국밥", items:[["소고기국밥(밥포함)",420,24,50,12],["깍두기",15,1,3,0],["김치",15,1,3,0]] },
-            { id:"lu6", name:"김치찌개 + 계란", items:[["현미밥 2/3",200,4,44,1],["김치찌개(두부)",150,12,8,7],["계란말이 2개",150,10,2,11],["콩나물무침",30,3,3,1]] },
-            { id:"lu7", name:"닭가슴살 샌드위치", items:[["통밀빵 2장",160,6,28,3],["닭가슴살 슬라이스 120g",132,28,0,2],["양상추+토마토",20,1,4,0],["슬라이스치즈 1장",60,4,0,5],["우유 200ml",130,6,10,7]] },
-            { id:"lu8", name:"참치 샌드위치", items:[["통밀빵 2장",160,6,28,3],["참치캔 1개(기름제거)",100,22,0,1],["양상추+오이",15,1,3,0],["계란프라이 1개",90,6,0,7],["두유 1팩",120,8,10,5]] },
-            { id:"lu9", name:"닭가슴살 토르티야 랩", items:[["통밀 토르티야 1장",130,4,22,3],["닭가슴살 150g",165,35,0,2],["양상추+토마토+양파",25,1,5,0],["그릭요거트 드레싱",40,3,2,2],["사과 1/2개",50,0,13,0]] },
-            { id:"lu10", name:"연어 포케 보울", items:[["현미밥 2/3",200,4,44,1],["훈제연어 100g",180,22,0,10],["아보카도 1/4",60,1,3,5],["오이+양파+당근",25,1,5,0],["계란프라이 1개",90,6,0,7]] },
-            { id:"lu11", name:"편의점 조합 (닭가슴살+고구마)", items:[["닭가슴살 팩 1개",110,23,2,1],["고구마 1개(중)",130,2,30,0],["삶은달걀 2개",140,12,0,10],["두유 1팩",120,8,10,5]] },
-        ];
-
-        const DINNERS = [
-            { id:"dn1", name:"연어구이 + 현미밥", items:[["현미밥 2/3",200,4,44,1],["연어구이 150g",275,31,0,16],["그린샐러드(올리브유)",80,2,5,6],["계란프라이 1개",90,6,0,7]] },
-            { id:"dn2", name:"닭가슴살 200g + 고구마", items:[["고구마 1.5개",195,3,45,0],["닭가슴살 200g",220,46,0,3],["브로콜리 데침",30,3,4,0],["양배추 샐드",40,1,6,1],["아몬드 10알",70,3,2,6]] },
-            { id:"dn3", name:"참치 스테이크 + 두부", items:[["잡곡밥 2/3",210,5,46,1],["참치 스테이크 150g",250,38,0,10],["샐러드(올리브유)",80,2,5,6],["두부반모 구이",100,10,3,5]] },
-            { id:"dn4", name:"소고기 스테이크 + 계란말이", items:[["현미밥 2/3",200,4,44,1],["소고기 스테이크 130g",260,34,0,13],["구운채소(양파,애호박)",50,2,10,1],["계란말이 2개",150,10,2,11]] },
-            { id:"dn5", name:"새우볶음 + 고구마", items:[["고구마 2개",260,4,60,0],["새우볶음 200g",225,33,7,8],["양상추 샐러드",40,1,4,2],["토마토 1개",25,1,5,0]] },
-            { id:"dn6", name:"닭다리살 오븐구이 정식", items:[["잡곡밥 2/3",210,5,46,1],["닭다리살 오븐구이 180g",252,34,0,13],["콩나물무침",30,3,3,1],["미역국",30,2,3,1],["김치",15,1,3,0]] },
-            { id:"dn7", name:"연어회 + 순두부찌개", items:[["현미밥 2/3",200,4,44,1],["연어회 150g",250,30,0,14],["순두부찌개",100,8,5,5],["나물반찬",25,2,3,1],["김 3장",15,2,1,1]] },
-            { id:"dn8", name:"돼지안심 + 두부스테이크", items:[["고구마 1.5개",195,3,45,0],["돼지안심 구이 150g",210,33,0,8],["두부스테이크 100g",90,8,3,5],["그린샐러드",50,2,5,2],["삶은 달걀 1개",70,6,0,5]] },
-            { id:"dn9", name:"닭가슴살 볶음 + 두부김치", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 볶음",200,32,5,5],["계란프라이 1개",90,6,0,7],["두부김치",120,10,5,7],["방울토마토",30,1,6,0]] },
-        ];
-
-        const SNACKS = [
-            { id:"sn1", name:"그릭요거트 + 아몬드", items:[["그릭요거트 150g",90,15,5,1],["아몬드 15알",105,4,3,9]] },
-            { id:"sn2", name:"프로틴바 1개", items:[["프로틴바 1개",200,22,20,6]] },
-            { id:"sn3", name:"두유 + 호두", items:[["두유 1팩",120,8,10,5],["호두 5알",65,2,1,6]] },
-            { id:"sn4", name:"바나나 + 견과류", items:[["바나나 1개",100,1,26,0],["견과류 믹스 20g",110,3,4,9]] },
-            { id:"sn5", name:"프로틴 쉐이크 + 사과", items:[["프로틴 쉐이크",150,25,5,3],["사과 1/2개",50,0,13,0]] },
-            { id:"sn6", name:"그릭요거트 + 사과 + 호두", items:[["그릭요거트 150g",90,15,5,1],["사과 1/2개",50,0,13,0],["호두 3알",40,1,1,4]] },
-            { id:"sn7", name:"삶은달걀 + 두유", items:[["삶은 달걀 1개",70,6,0,5],["두유 1팩",120,8,10,5]] },
-            { id:"sn0", name:"안 먹음", items:[] },
-        ];
-
-        const sumItems = (items) => items.reduce((a, x) => ({ kcal: a.kcal+x[1], protein: a.protein+x[2], carb: a.carb+x[3], fat: a.fat+x[4] }), { kcal:0, protein:0, carb:0, fat:0 });
-        const DOW = ["일","월","화","수","목","금","토"];
-        const DAYS = Array.from({length:30}, (_,i) => {
-            const d = new Date(2026, 3, i+1);
-            return { date: i+1, dow: DOW[d.getDay()] };
-        });
-
-        // ── 컴포넌트 ────────────────────────────────────────────
-        const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
-            const r = (size - stroke) / 2;
-            const circ = 2 * Math.PI * r;
-            const p = Math.min(pct, 100);
+import { useState, useMemo, useCallback } from "react";
+ 
+// ── 데이터 ──────────────────────────────────────────────
+const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
+ 
+const BREAKFASTS = [
+  { id: "bf1", name: "삶은 달걀 2개 + 우유", items: [["삶은 달걀 2개",140,12,0,10],["우유 200ml",130,6,10,7]] },
+  { id: "bf2", name: "프로틴 쉐이크 + 바나나", items: [["프로틴 쉐이크",150,25,5,3],["바나나 1개",100,1,26,0]] },
+  { id: "bf3", name: "그릭요거트 + 아몬드", items: [["그릭요거트 200g",120,20,7,1],["아몬드 10알",70,3,2,6]] },
+  { id: "bf4", name: "두유 + 삶은 달걀 2개", items: [["두유 1팩",120,8,10,5],["삶은 달걀 2개",140,12,0,10]] },
+  { id: "bf5", name: "통밀토스트 + 삶은 달걀 2개", items: [["통밀토스트 1장",80,3,14,2],["삶은 달걀 2개",140,12,0,10]] },
+  { id: "bf6", name: "프로틴바 1개", items: [["프로틴바 1개",200,22,20,6]] },
+  { id: "bf7", name: "바나나 + 우유", items: [["바나나 1개",100,1,26,0],["우유 200ml",130,6,10,7]] },
+  { id: "bf0", name: "스킵 (안 먹음)", items: [] },
+];
+ 
+const LUNCHES = [
+  // ── 한식 (간편) ──
+  { id:"lu1", name:"제육볶음 도시락", items:[["잡곡밥 2/3",210,5,46,1],["제육볶음 130g",235,22,8,13],["배추김치",15,1,3,0],["콩나물무침",30,3,3,1]] },
+  { id:"lu2", name:"소불고기 도시락", items:[["현미밥 2/3",200,4,44,1],["소불고기 130g",215,24,8,10],["시금치나물",25,2,3,1],["깍두기",15,1,3,0]] },
+  { id:"lu3", name:"참치캔 볶음 정식", items:[["현미밥 2/3",200,4,44,1],["참치캔 볶음",180,25,5,7],["무생채",20,1,4,0],["순두부찌개",100,8,5,5]] },
+  { id:"lu4", name:"닭가슴살 덮밥", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 간장조림 150g",180,34,5,2],["계란프라이 1개",90,6,0,7],["김치",15,1,3,0]] },
+  { id:"lu5", name:"소고기국밥", items:[["소고기국밥(밥포함)",420,24,50,12],["깍두기",15,1,3,0],["김치",15,1,3,0]] },
+  { id:"lu6", name:"김치찌개 + 계란", items:[["현미밥 2/3",200,4,44,1],["김치찌개(두부)",150,12,8,7],["계란말이 2개",150,10,2,11],["콩나물무침",30,3,3,1]] },
+  // ── 양식 / 간편식 ──
+  { id:"lu7", name:"닭가슴살 샌드위치", items:[["통밀빵 2장",160,6,28,3],["닭가슴살 슬라이스 120g",132,28,0,2],["양상추+토마토",20,1,4,0],["슬라이스치즈 1장",60,4,0,5],["우유 200ml",130,6,10,7]] },
+  { id:"lu8", name:"참치 샌드위치", items:[["통밀빵 2장",160,6,28,3],["참치캔 1개(기름제거)",100,22,0,1],["양상추+오이",15,1,3,0],["계란프라이 1개",90,6,0,7],["두유 1팩",120,8,10,5]] },
+  { id:"lu9", name:"닭가슴살 토르티야 랩", items:[["통밀 토르티야 1장",130,4,22,3],["닭가슴살 150g",165,35,0,2],["양상추+토마토+양파",25,1,5,0],["그릭요거트 드레싱",40,3,2,2],["사과 1/2개",50,0,13,0]] },
+  { id:"lu10", name:"연어 포케 보울", items:[["현미밥 2/3",200,4,44,1],["훈제연어 100g",180,22,0,10],["아보카도 1/4",60,1,3,5],["오이+양파+당근",25,1,5,0],["계란프라이 1개",90,6,0,7]] },
+  { id:"lu11", name:"편의점 조합 (닭가슴살+고구마)", items:[["닭가슴살 팩 1개",110,23,2,1],["고구마 1개(중)",130,2,30,0],["삶은달걀 2개",140,12,0,10],["두유 1팩",120,8,10,5]] },
+];
+ 
+const DINNERS = [
+  { id:"dn1", name:"연어구이 + 현미밥", items:[["현미밥 2/3",200,4,44,1],["연어구이 150g",275,31,0,16],["그린샐러드(올리브유)",80,2,5,6],["계란프라이 1개",90,6,0,7]] },
+  { id:"dn2", name:"닭가슴살 200g + 고구마", items:[["고구마 1.5개",195,3,45,0],["닭가슴살 200g",220,46,0,3],["브로콜리 데침",30,3,4,0],["양배추 샐러드",40,1,6,1],["아몬드 10알",70,3,2,6]] },
+  { id:"dn3", name:"참치 스테이크 + 두부", items:[["잡곡밥 2/3",210,5,46,1],["참치 스테이크 150g",250,38,0,10],["샐러드(올리브유)",80,2,5,6],["두부반모 구이",100,10,3,5]] },
+  { id:"dn4", name:"소고기 스테이크 + 계란말이", items:[["현미밥 2/3",200,4,44,1],["소고기 스테이크 130g",260,34,0,13],["구운채소(양파,애호박)",50,2,10,1],["계란말이 2개",150,10,2,11]] },
+  { id:"dn5", name:"새우볶음 + 고구마", items:[["고구마 2개",260,4,60,0],["새우볶음 200g",225,33,7,8],["양상추 샐러드",40,1,4,2],["토마토 1개",25,1,5,0]] },
+  { id:"dn6", name:"닭다리살 오븐구이 정식", items:[["잡곡밥 2/3",210,5,46,1],["닭다리살 오븐구이 180g",252,34,0,13],["콩나물무침",30,3,3,1],["미역국",30,2,3,1],["김치",15,1,3,0]] },
+  { id:"dn7", name:"연어회 + 순두부찌개", items:[["현미밥 2/3",200,4,44,1],["연어회 150g",250,30,0,14],["순두부찌개",100,8,5,5],["나물반찬",25,2,3,1],["김 3장",15,2,1,1]] },
+  { id:"dn8", name:"돼지안심 + 두부스테이크", items:[["고구마 1.5개",195,3,45,0],["돼지안심 구이 150g",210,33,0,8],["두부스테이크 100g",90,8,3,5],["그린샐러드",50,2,5,2],["삶은 달걀 1개",70,6,0,5]] },
+  { id:"dn9", name:"닭가슴살 볶음 + 두부김치", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 볶음",200,32,5,5],["계란프라이 1개",90,6,0,7],["두부김치",120,10,5,7],["방울토마토",30,1,6,0]] },
+  { id:"dn10", name:"간장계란밥 + 블페 닭가슴살", items:[["햇반 발아현미밥 (소)",200,4,43,1],["삶은 반숙란 5개",350,30,0,25],["하림 블랙페퍼 닭가슴살 2쪽",140,28,4,2],["들기름 1스푼",45,0,0,5],["간장 약간",5,1,1,0]] },
+];
+ 
+const SNACKS = [
+  { id:"sn1", name:"그릭요거트 + 아몬드", items:[["그릭요거트 150g",90,15,5,1],["아몬드 15알",105,4,3,9]] },
+  { id:"sn2", name:"프로틴바 1개", items:[["프로틴바 1개",200,22,20,6]] },
+  { id:"sn3", name:"두유 + 호두", items:[["두유 1팩",120,8,10,5],["호두 5알",65,2,1,6]] },
+  { id:"sn4", name:"바나나 + 견과류", items:[["바나나 1개",100,1,26,0],["견과류 믹스 20g",110,3,4,9]] },
+  { id:"sn5", name:"프로틴 쉐이크 + 사과", items:[["프로틴 쉐이크",150,25,5,3],["사과 1/2개",50,0,13,0]] },
+  { id:"sn6", name:"그릭요거트 + 사과 + 호두", items:[["그릭요거트 150g",90,15,5,1],["사과 1/2개",50,0,13,0],["호두 3알",40,1,1,4]] },
+  { id:"sn7", name:"삶은달걀 + 두유", items:[["삶은 달걀 1개",70,6,0,5],["두유 1팩",120,8,10,5]] },
+  { id:"sn0", name:"안 먹음", items:[] },
+];
+ 
+const sumItems = (items) => items.reduce((a, x) => ({ kcal: a.kcal+x[1], protein: a.protein+x[2], carb: a.carb+x[3], fat: a.fat+x[4] }), { kcal:0, protein:0, carb:0, fat:0 });
+ 
+const DOW = ["일","월","화","수","목","금","토"];
+const DAYS = Array.from({length:30}, (_,i) => {
+  const d = new Date(2026, 3, i+1);
+  return { date: i+1, dow: DOW[d.getDay()] };
+});
+ 
+// ── 컴포넌트 ────────────────────────────────────────────
+const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const p = Math.min(pct, 100);
+  return (
+    <svg width={size} height={size} style={{ transform:"rotate(-90deg)" }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - p/100)} strokeLinecap="round"
+        style={{ transition:"stroke-dashoffset 0.4s ease" }} />
+      <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
+        style={{ transform:"rotate(90deg)", transformOrigin:"center", fontSize:size*0.22, fontWeight:700, fill:color }}>
+        {Math.round(p)}%
+      </text>
+    </svg>
+  );
+};
+ 
+const MealSelector = ({ label, options, value, onChange, onReset, accent }) => {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.id === value);
+  const totals = selected ? sumItems(selected.items) : null;
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 3 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform:"uppercase", letterSpacing:1 }}>{label}</div>
+        {value && (
+          <button onClick={(e) => { e.stopPropagation(); onReset(); }}
+            style={{ fontSize:10, color:"#94a3b8", background:"none", border:"1px solid #e2e8f0", borderRadius:4,
+              padding:"1px 6px", cursor:"pointer", lineHeight:"18px" }}
+            onMouseEnter={e => { e.currentTarget.style.color="#ef4444"; e.currentTarget.style.borderColor="#fca5a5"; }}
+            onMouseLeave={e => { e.currentTarget.style.color="#94a3b8"; e.currentTarget.style.borderColor="#e2e8f0"; }}>
+            reset
+          </button>
+        )}
+      </div>
+      <div onClick={() => setOpen(!open)}
+        style={{ padding:"8px 12px", background: value ? "#f0fdf4" : "#fefce8", border: value ? "1.5px solid #86efac" : "1.5px dashed #d4d4d8",
+          borderRadius: 8, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", transition:"all .2s" }}>
+        <span style={{ fontSize: 13, fontWeight: value ? 600 : 400, color: value ? "#166534" : "#71717a" }}>
+          {selected ? selected.name : "메뉴를 선택하세요"}
+        </span>
+        {totals && totals.kcal > 0 && <span style={{ fontSize: 11, color:"#6b7280", whiteSpace:"nowrap", marginLeft:8 }}>{totals.kcal}kcal</span>}
+        <span style={{ marginLeft: 6, fontSize: 10, color:"#a1a1aa" }}>{open ? "▲" : "▼"}</span>
+      </div>
+      {open && (
+        <div style={{ marginTop: 4, border:"1px solid #e5e7eb", borderRadius: 8, background:"#fff", boxShadow:"0 4px 12px rgba(0,0,0,.08)", maxHeight: 220, overflowY:"auto", zIndex:10, position:"relative" }}>
+          {options.map(o => {
+            const t = sumItems(o.items);
             return (
-                <svg width={size} height={size} style={{ transform:"rotate(-90deg)" }}>
-                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
-                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-                        strokeDasharray={circ} strokeDashoffset={circ * (1 - p/100)} strokeLinecap="round"
-                        style={{ transition:"stroke-dashoffset 0.4s ease" }} />
-                    <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-                        style={{ transform:"rotate(90deg)", transformOrigin:"center", fontSize:size*0.22, fontWeight:700, fill:color }}>
-                        {Math.round(p)}%
-                    </text>
-                </svg>
-            );
-        };
-
-        const MealSelector = ({ label, options, value, onChange, accent }) => {
-            const [open, setOpen] = useState(false);
-            const selected = options.find(o => o.id === value);
-            const totals = selected ? sumItems(selected.items) : null;
-            return (
-                <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: accent, marginBottom: 3, textTransform:"uppercase", letterSpacing:1 }}>{label}</div>
-                    <div onClick={() => setOpen(!open)}
-                        style={{ padding:"10px 12px", background: value ? "#f0fdf4" : "#fefce8", border: value ? "1.5px solid #86efac" : "1.5px dashed #d4d4d8",
-                            borderRadius: 12, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize: 13, fontWeight: value ? 600 : 400, color: value ? "#166534" : "#71717a" }}>
-                            {selected ? selected.name : "메뉴를 선택하세요"}
-                        </span>
-                        {totals && <span style={{ fontSize: 11, color:"#6b7280", whiteSpace:"nowrap", marginLeft:8 }}>{totals.kcal}kcal</span>}
-                    </div>
-                    {open && (
-                        <div style={{ marginTop: 6, border:"1px solid #e5e7eb", borderRadius: 12, background:"#fff", boxShadow:"0 10px 25px rgba(0,0,0,.1)", maxHeight: 250, overflowY:"auto", zIndex:10, position:"relative" }}>
-                            {options.map(o => {
-                                const t = sumItems(o.items);
-                                return (
-                                    <div key={o.id} onClick={() => { onChange(o.id); setOpen(false); }}
-                                        style={{ padding:"12px", cursor:"pointer", borderBottom:"1px solid #f4f4f5", background: o.id === value ? "#f0fdf4" : "transparent" }}>
-                                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                                            <div style={{ fontSize: 13, fontWeight: o.id===value ? 600 : 400 }}>{o.name}</div>
-                                            <div style={{ fontSize: 11, color:"#6b7280" }}>{o.items.length > 0 ? `${t.kcal}kcal` : "-"}</div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+              <div key={o.id} onClick={() => { onChange(o.id); setOpen(false); }}
+                style={{ padding:"8px 12px", cursor:"pointer", borderBottom:"1px solid #f4f4f5",
+                  background: o.id === value ? "#f0fdf4" : "transparent", display:"flex", justifyContent:"space-between", alignItems:"center" }}
+                onMouseEnter={e => e.currentTarget.style.background="#f9fafb"}
+                onMouseLeave={e => e.currentTarget.style.background = o.id===value ? "#f0fdf4" : "transparent"}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: o.id===value ? 600 : 400 }}>{o.name}</div>
+                  {o.items.length > 0 && <div style={{ fontSize: 10, color:"#9ca3af", marginTop:2 }}>{o.items.map(x=>x[0]).join(" / ")}</div>}
                 </div>
-            );
-        };
-
-        // ── 메인 앱 ─────────────────────────────────────────────
-        function App() {
-            // 로컬 스토리지에서 데이터를 불러와 저장합니다 (PWA용)
-            const [selections, setSelections] = useState(() => {
-                const saved = localStorage.getItem("diet_tracker_2026_04");
-                return saved ? JSON.parse(saved) : {};
-            });
-            const [viewDate, setViewDate] = useState(new Date().getDate()); // 오늘 날짜 기본 선택
-
-            useEffect(() => {
-                localStorage.setItem("diet_tracker_2026_04", JSON.stringify(selections));
-            }, [selections]);
-
-            const set = useCallback((day, meal, id) => {
-                setSelections(prev => ({ ...prev, [`${day}_${meal}`]: id }));
-            }, []);
-
-            const getDayTotals = useCallback((day) => {
-                const meals = ["bf","lu","dn","sn"];
-                const lists = [BREAKFASTS, LUNCHES, DINNERS, SNACKS];
-                let total = { kcal:0, protein:0, carb:0, fat:0 };
-                meals.forEach((m,i) => {
-                    const sel = selections[`${day}_${m}`];
-                    if (sel) {
-                        const opt = lists[i].find(o=>o.id===sel);
-                        if (opt) { const s=sumItems(opt.items); total.kcal+=s.kcal; total.protein+=s.protein; total.carb+=s.carb; total.fat+=s.fat; }
-                    }
-                });
-                return total;
-            }, [selections]);
-
-            const monthStats = useMemo(() => {
-                let totalKcal=0, totalProtein=0, filledDays=0;
-                DAYS.forEach(d => {
-                    const t = getDayTotals(d.date);
-                    if (t.kcal > 0) { filledDays++; totalKcal+=t.kcal; totalProtein+=t.protein; }
-                });
-                return { filledDays, avgKcal: filledDays ? Math.round(totalKcal/filledDays) : 0, avgProtein: filledDays ? Math.round(totalProtein/filledDays) : 0 };
-            }, [getDayTotals]);
-
-            const dayInfo = DAYS[viewDate - 1] || DAYS[0];
-            const dayTotals = getDayTotals(viewDate);
-            const dayFilled = dayTotals.kcal > 0;
-
-            return (
-                <div style={{ minHeight:"100vh", background:"#f8fafc" }}>
-                    <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3aed)", padding:"24px 20px", color:"#fff" }}>
-                        <h1 style={{ fontSize:22, fontWeight:800, margin:0 }}>4월 식단 트래커</h1>
-                        <p style={{ fontSize:13, opacity:.8, margin:"6px 0 16px" }}>도연님의 체지방 감량 목표: 1,850kcal</p>
-                        
-                        <div style={{ display:"flex", gap:10, background:"rgba(255,255,255,.15)", borderRadius:16, padding:"16px" }}>
-                            <div style={{ flex:1, textAlign:"center" }}>
-                                <div style={{ fontSize:10, opacity:.7, marginBottom:4 }}>진행 일수</div>
-                                <div style={{ fontSize:20, fontWeight:800 }}>{monthStats.filledDays} <span style={{fontSize:12, fontWeight:400}}>/ 30</span></div>
-                            </div>
-                            <div style={{ width:1, background:"rgba(255,255,255,.2)" }} />
-                            <div style={{ flex:1, textAlign:"center" }}>
-                                <div style={{ fontSize:10, opacity:.7, marginBottom:4 }}>평균 칼로리</div>
-                                <div style={{ fontSize:20, fontWeight:800, color: monthStats.avgKcal > 1900 ? "#fca5a5" : "#86efac" }}>{monthStats.avgKcal || "-"}</div>
-                            </div>
-                            <div style={{ width:1, background:"rgba(255,255,255,.2)" }} />
-                            <div style={{ flex:1, textAlign:"center" }}>
-                                <div style={{ fontSize:10, opacity:.7, marginBottom:4 }}>평균 단백질</div>
-                                <div style={{ fontSize:20, fontWeight:800 }}>{monthStats.avgProtein || "-"}g</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ padding:"16px", maxWidth:500, margin:"0 auto" }}>
-                        {/* 달력 섹션 */}
-                        <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:6, marginBottom:20 }}>
-                            {DAYS.map(d => {
-                                const t = getDayTotals(d.date);
-                                const isSelected = viewDate === d.date;
-                                const filled = t.kcal > 0;
-                                return (
-                                    <div key={d.date} onClick={() => setViewDate(d.date)}
-                                        style={{
-                                            textAlign:"center", padding:"10px 0", borderRadius:12, cursor:"pointer",
-                                            background: isSelected ? "#1e40af" : filled ? "#f0fdf4" : "#fff",
-                                            color: isSelected ? "#fff" : "#1e293b",
-                                            border: isSelected ? "2px solid #1e40af" : filled ? "2px solid #86efac" : "2px solid #e2e8f0"
-                                        }}>
-                                        <div style={{ fontSize:14, fontWeight:700 }}>{d.date}</div>
-                                        <div style={{ fontSize:8, opacity: filled ? 1 : 0 }}>●</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* 상세 내용 카드 */}
-                        <div style={{ background:"#fff", borderRadius:20, padding:20, boxShadow:"0 4px 6px -1px rgba(0,0,0,0.1)" }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-                                <div>
-                                    <h2 style={{ fontSize:20, fontWeight:800, margin:0 }}>4월 {dayInfo.date}일 ({dayInfo.dow})</h2>
-                                    <p style={{ fontSize:12, color:"#64748b", margin:"4px 0 0" }}>오늘의 총 섭취: {dayTotals.kcal} kcal</p>
-                                </div>
-                                <ProgressRing pct={(dayTotals.kcal / DAILY_TARGET.kcal) * 100} color={dayTotals.kcal > 1900 ? "#ef4444" : "#22c55e"} size={52} stroke={5} />
-                            </div>
-
-                            {dayFilled && (
-                                <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:20, padding:"15px 0", borderTop:"1px solid #f1f5f9", borderBottom:"1px solid #f1f5f9" }}>
-                                    {[
-                                        { l:"단백질", v:dayTotals.protein, t:DAILY_TARGET.protein, c:"#3b82f6" },
-                                        { l:"탄수화물", v:dayTotals.carb, t:DAILY_TARGET.carb, c:"#f59e0b" },
-                                        { l:"지방", v:dayTotals.fat, t:DAILY_TARGET.fat, c:"#ef4444" }
-                                    ].map(n => (
-                                        <div key={n.l} style={{ textAlign:"center" }}>
-                                            <div style={{ fontSize:10, color:"#94a3b8" }}>{n.l}</div>
-                                            <div style={{ fontSize:15, fontWeight:700 }}>{n.v}g</div>
-                                            <div style={{ height:4, background:"#e5e7eb", borderRadius:2, marginTop:6 }}>
-                                                <div style={{ width:`${Math.min((n.v/n.t)*100, 100)}%`, height:"100%", background:n.c, borderRadius:2 }} />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <MealSelector label="아침" options={BREAKFASTS} value={selections[`${viewDate}_bf`] || ""} onChange={id => set(viewDate,"bf",id)} accent="#f59e0b" />
-                            <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`] || ""} onChange={id => set(viewDate,"lu",id)} accent="#3b82f6" />
-                            <MealSelector label="저녁" options={DINNERS} value={selections[`${viewDate}_dn`] || ""} onChange={id => set(viewDate,"dn",id)} accent="#8b5cf6" />
-                            <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`] || ""} onChange={id => set(viewDate,"sn",id)} accent="#10b981" />
-                        </div>
-                    </div>
+                <div style={{ fontSize: 11, color:"#6b7280", whiteSpace:"nowrap", textAlign:"right", minWidth:70 }}>
+                  {o.items.length > 0 ? `${t.kcal}kcal` : "-"}
                 </div>
+              </div>
             );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-
-        // 서비스 워커 등록 (오프라인 지원)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swCode = `
-                    self.addEventListener('install', e => self.skipWaiting());
-                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob));
-            });
-        }
-    </script>
-</body>
-</html>
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+ 
+// ── 기타 수동 입력 ──────────────────────────────────────
+const ExtraInput = ({ extras, onAdd, onRemove }) => {
+  const [name, setName] = useState("");
+  const [kcal, setKcal] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carb, setCarb] = useState("");
+  const [fat, setFat] = useState("");
+  const [expanded, setExpanded] = useState(false);
+ 
+  const handleAdd = () => {
+    if (!name.trim() || !kcal) return;
+    onAdd({ name: name.trim(), kcal: Number(kcal)||0, protein: Number(protein)||0, carb: Number(carb)||0, fat: Number(fat)||0 });
+    setName(""); setKcal(""); setProtein(""); setCarb(""); setFat("");
+  };
+ 
+  const inputStyle = { fontSize:12, padding:"6px 8px", border:"1px solid #e2e8f0", borderRadius:6, outline:"none", width:"100%", boxSizing:"border-box" };
+ 
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 3 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform:"uppercase", letterSpacing:1 }}>기타 (수동 입력)</div>
+        {extras.length > 0 && (
+          <span style={{ fontSize:10, color:"#94a3b8" }}>{extras.reduce((s,e)=>s+e.kcal,0)}kcal</span>
+        )}
+      </div>
+ 
+      {/* 추가된 항목들 */}
+      {extras.map((e, i) => (
+        <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 10px",
+          background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:6, marginBottom:4, fontSize:12 }}>
+          <span style={{ color:"#334155", fontWeight:500 }}>{e.name}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ color:"#6b7280" }}>{e.kcal}kcal</span>
+            {e.protein > 0 && <span style={{ color:"#3b82f6", fontSize:10 }}>P{e.protein}</span>}
+            {e.carb > 0 && <span style={{ color:"#f59e0b", fontSize:10 }}>C{e.carb}</span>}
+            {e.fat > 0 && <span style={{ color:"#ef4444", fontSize:10 }}>F{e.fat}</span>}
+            <button onClick={() => onRemove(i)}
+              style={{ background:"none", border:"none", color:"#cbd5e1", cursor:"pointer", fontSize:14, padding:"0 2px", lineHeight:1 }}
+              onMouseEnter={e => e.currentTarget.style.color="#ef4444"}
+              onMouseLeave={e => e.currentTarget.style.color="#cbd5e1"}>
+              ×
+            </button>
+          </div>
+        </div>
+      ))}
+ 
+      {/* 입력 폼 */}
+      <div onClick={() => !expanded && setExpanded(true)}
+        style={{ padding: expanded ? "10px" : "8px 12px",
+          background: expanded ? "#fff" : "#fafafa", border:"1.5px dashed #d4d4d8", borderRadius:8,
+          cursor: expanded ? "default" : "pointer", transition:"all .2s" }}>
+        {!expanded ? (
+          <span style={{ fontSize:12, color:"#94a3b8" }}>+ 추가로 먹은 음식 입력...</span>
+        ) : (
+          <div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:6 }}>
+              <div style={{ gridColumn:"1 / -1" }}>
+                <input value={name} onChange={e=>setName(e.target.value)} placeholder="음식 이름 (필수)" style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:"#94a3b8", marginBottom:2 }}>칼로리 (필수)</div>
+                <input value={kcal} onChange={e=>setKcal(e.target.value)} placeholder="kcal" type="number" style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:"#94a3b8", marginBottom:2 }}>단백질</div>
+                <input value={protein} onChange={e=>setProtein(e.target.value)} placeholder="g" type="number" style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:"#94a3b8", marginBottom:2 }}>탄수화물</div>
+                <input value={carb} onChange={e=>setCarb(e.target.value)} placeholder="g" type="number" style={inputStyle} />
+              </div>
+              <div>
+                <div style={{ fontSize:9, color:"#94a3b8", marginBottom:2 }}>지방</div>
+                <input value={fat} onChange={e=>setFat(e.target.value)} placeholder="g" type="number" style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={handleAdd}
+                style={{ flex:1, padding:"7px 0", background: (name.trim() && kcal) ? "#1e40af" : "#e2e8f0",
+                  color: (name.trim() && kcal) ? "#fff" : "#94a3b8", border:"none", borderRadius:6, fontSize:12,
+                  fontWeight:600, cursor: (name.trim() && kcal) ? "pointer" : "default" }}>
+                추가
+              </button>
+              <button onClick={() => setExpanded(false)}
+                style={{ padding:"7px 12px", background:"#f1f5f9", color:"#64748b", border:"none", borderRadius:6, fontSize:12, cursor:"pointer" }}>
+                닫기
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+ 
+// ── 메인 앱 ─────────────────────────────────────────────
+export default function App() {
+  const [selections, setSelections] = useState({});
+  const [extras, setExtras] = useState({}); // { "1": [{name,kcal,protein,carb,fat}, ...], ... }
+  const [viewDate, setViewDate] = useState(1);
+ 
+  const set = useCallback((day, meal, id) => {
+    setSelections(prev => ({ ...prev, [`${day}_${meal}`]: id }));
+  }, []);
+ 
+  const reset = useCallback((day, meal) => {
+    setSelections(prev => { const n = {...prev}; delete n[`${day}_${meal}`]; return n; });
+  }, []);
+ 
+  const addExtra = useCallback((day, item) => {
+    setExtras(prev => ({ ...prev, [day]: [...(prev[day]||[]), item] }));
+  }, []);
+ 
+  const removeExtra = useCallback((day, idx) => {
+    setExtras(prev => {
+      const list = [...(prev[day]||[])];
+      list.splice(idx, 1);
+      return { ...prev, [day]: list };
+    });
+  }, []);
+ 
+  const getDayTotals = useCallback((day) => {
+    const meals = ["bf","lu","dn","sn"];
+    const lists = [BREAKFASTS, LUNCHES, DINNERS, SNACKS];
+    let total = { kcal:0, protein:0, carb:0, fat:0 };
+    meals.forEach((m,i) => {
+      const sel = selections[`${day}_${m}`];
+      if (sel) {
+        const opt = lists[i].find(o=>o.id===sel);
+        if (opt) { const s=sumItems(opt.items); total.kcal+=s.kcal; total.protein+=s.protein; total.carb+=s.carb; total.fat+=s.fat; }
+      }
+    });
+    // 기타 항목 합산
+    (extras[day]||[]).forEach(e => {
+      total.kcal += e.kcal; total.protein += e.protein; total.carb += e.carb; total.fat += e.fat;
+    });
+    return total;
+  }, [selections, extras]);
+ 
+  const monthStats = useMemo(() => {
+    let totalKcal=0, totalProtein=0, totalCarb=0, totalFat=0, filledDays=0;
+    DAYS.forEach(d => {
+      const t = getDayTotals(d.date);
+      if (t.kcal > 0) { filledDays++; totalKcal+=t.kcal; totalProtein+=t.protein; totalCarb+=t.carb; totalFat+=t.fat; }
+    });
+    return { totalKcal, totalProtein, totalCarb, totalFat, filledDays, avgKcal: filledDays ? Math.round(totalKcal/filledDays) : 0 };
+  }, [getDayTotals]);
+ 
+  const dayInfo = DAYS[viewDate - 1];
+  const dayTotals = getDayTotals(viewDate);
+  const dayExtras = extras[viewDate] || [];
+  const dayFilled = dayTotals.kcal > 0;
+ 
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#f8fafc 0%,#e0e7ff 100%)", fontFamily:"'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+      {/* 헤더 */}
+      <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3aed)", padding:"20px 16px 16px", color:"#fff" }}>
+        <div style={{ maxWidth:480, margin:"0 auto" }}>
+          <h1 style={{ fontSize:20, fontWeight:800, margin:0 }}>4월 체지방 감량 식단</h1>
+          <p style={{ fontSize:12, opacity:.8, margin:"4px 0 0" }}>목표: 체지방 -1.5kg / 일일 1,850kcal</p>
+ 
+          {/* 월간 요약 */}
+          <div style={{ display:"flex", gap:12, marginTop:14, background:"rgba(255,255,255,.12)", borderRadius:12, padding:"12px 14px" }}>
+            <div style={{ textAlign:"center", flex:1 }}>
+              <div style={{ fontSize:10, opacity:.7 }}>기록일</div>
+              <div style={{ fontSize:20, fontWeight:800 }}>{monthStats.filledDays}<span style={{fontSize:12,fontWeight:400}}>/30</span></div>
+            </div>
+            <div style={{ width:1, background:"rgba(255,255,255,.2)" }} />
+            <div style={{ textAlign:"center", flex:1 }}>
+              <div style={{ fontSize:10, opacity:.7 }}>평균 kcal</div>
+              <div style={{ fontSize:20, fontWeight:800, color: monthStats.avgKcal > 1900 ? "#fca5a5" : "#86efac" }}>{monthStats.avgKcal || "-"}</div>
+            </div>
+            <div style={{ width:1, background:"rgba(255,255,255,.2)" }} />
+            <div style={{ textAlign:"center", flex:1 }}>
+              <div style={{ fontSize:10, opacity:.7 }}>평균 단백질</div>
+              <div style={{ fontSize:20, fontWeight:800 }}>{monthStats.filledDays ? Math.round(monthStats.totalProtein/monthStats.filledDays) : "-"}g</div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      {/* 달력 */}
+      <div style={{ maxWidth:480, margin:"0 auto", padding:"12px 12px 0" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
+          {["일","월","화","수","목","금","토"].map(d => (
+            <div key={d} style={{ textAlign:"center", fontSize:10, fontWeight:700, color:"#94a3b8", padding:"2px 0" }}>{d}</div>
+          ))}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+          {/* 4/1 = 수요일 => 3칸 패딩 */}
+          {[...Array(3)].map((_,i) => <div key={`pad${i}`} />)}
+          {DAYS.map(d => {
+            const t = getDayTotals(d.date);
+            const filled = t.kcal > 0;
+            const isSelected = viewDate === d.date;
+            const overBudget = t.kcal > 1900;
+            return (
+              <div key={d.date} onClick={() => setViewDate(d.date)}
+                style={{
+                  textAlign:"center", padding:"6px 2px", borderRadius:10, cursor:"pointer", transition:"all .15s",
+                  background: isSelected ? "#1e40af" : filled ? (overBudget ? "#fef2f2" : "#f0fdf4") : "#fff",
+                  color: isSelected ? "#fff" : "#1e293b",
+                  border: isSelected ? "2px solid #1e40af" : filled ? `2px solid ${overBudget ? "#fca5a5" : "#86efac"}` : "2px solid #e2e8f0",
+                  boxShadow: isSelected ? "0 2px 8px rgba(30,64,175,.3)" : "none"
+                }}>
+                <div style={{ fontSize:13, fontWeight:700 }}>{d.date}</div>
+                {filled && <div style={{ fontSize:8, marginTop:1, opacity:.8 }}>{t.kcal}</div>}
+                {!filled && <div style={{ fontSize:8, marginTop:1, color:"#cbd5e1" }}>-</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+ 
+      {/* 선택된 날 상세 */}
+      <div style={{ maxWidth:480, margin:"0 auto", padding:"16px 12px 100px" }}>
+        <div style={{ background:"#fff", borderRadius:16, padding:16, boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div>
+              <h2 style={{ fontSize:18, fontWeight:800, margin:0, color:"#1e293b" }}>4/{dayInfo.date} ({dayInfo.dow})</h2>
+              <p style={{ fontSize:11, color:"#94a3b8", margin:"2px 0 0" }}>
+                {dayFilled ? `총 ${dayTotals.kcal}kcal 섭취` : "아직 식단을 선택하지 않았어요"}
+              </p>
+            </div>
+            {dayFilled && (
+              <div style={{ display:"flex", gap:6 }}>
+                <ProgressRing pct={dayTotals.kcal / DAILY_TARGET.kcal * 100} color={dayTotals.kcal > 1900 ? "#ef4444" : "#22c55e"} size={44} stroke={4} />
+              </div>
+            )}
+          </div>
+ 
+          {/* 영양소 바 */}
+          {dayFilled && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14, padding:"10px 0", borderTop:"1px solid #f1f5f9", borderBottom:"1px solid #f1f5f9" }}>
+              {[
+                { label:"단백질", val:dayTotals.protein, target:DAILY_TARGET.protein, unit:"g", color:"#3b82f6" },
+                { label:"탄수화물", val:dayTotals.carb, target:DAILY_TARGET.carb, unit:"g", color:"#f59e0b" },
+                { label:"지방", val:dayTotals.fat, target:DAILY_TARGET.fat, unit:"g", color:"#ef4444" },
+              ].map(n => (
+                <div key={n.label} style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:10, color:"#94a3b8", marginBottom:3 }}>{n.label}</div>
+                  <div style={{ fontSize:16, fontWeight:700, color: n.val > n.target*1.15 ? "#ef4444" : "#1e293b" }}>{n.val}<span style={{fontSize:10,fontWeight:400,color:"#94a3b8"}}>/{n.target}{n.unit}</span></div>
+                  <div style={{ height:4, background:"#e5e7eb", borderRadius:2, marginTop:4, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${Math.min(n.val/n.target*100,100)}%`, background:n.color, borderRadius:2, transition:"width .3s" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+ 
+          {/* 식사 선택기 */}
+          <MealSelector label="아침 (간단히)" options={BREAKFASTS} value={selections[`${viewDate}_bf`] || ""} onChange={id => set(viewDate,"bf",id)} onReset={() => reset(viewDate,"bf")} accent="#f59e0b" />
+          <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`] || ""} onChange={id => set(viewDate,"lu",id)} onReset={() => reset(viewDate,"lu")} accent="#3b82f6" />
+          <MealSelector label="저녁 (든든히)" options={DINNERS} value={selections[`${viewDate}_dn`] || ""} onChange={id => set(viewDate,"dn",id)} onReset={() => reset(viewDate,"dn")} accent="#8b5cf6" />
+          <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`] || ""} onChange={id => set(viewDate,"sn",id)} onReset={() => reset(viewDate,"sn")} accent="#10b981" />
+ 
+          {/* 기타 수동 입력 */}
+          <ExtraInput extras={dayExtras} onAdd={(item) => addExtra(viewDate, item)} onRemove={(idx) => removeExtra(viewDate, idx)} />
+ 
+          {/* 선택된 메뉴 상세 */}
+          {dayFilled && (
+            <div style={{ marginTop:12, background:"#f8fafc", borderRadius:10, padding:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#64748b", marginBottom:8 }}>상세 영양 정보</div>
+              <table style={{ width:"100%", fontSize:11, borderCollapse:"collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom:"1px solid #e2e8f0" }}>
+                    <th style={{ textAlign:"left", padding:"4px 6px", color:"#94a3b8", fontWeight:600 }}>음식</th>
+                    <th style={{ textAlign:"right", padding:"4px 6px", color:"#94a3b8", fontWeight:600 }}>kcal</th>
+                    <th style={{ textAlign:"right", padding:"4px 6px", color:"#94a3b8", fontWeight:600 }}>P</th>
+                    <th style={{ textAlign:"right", padding:"4px 6px", color:"#94a3b8", fontWeight:600 }}>C</th>
+                    <th style={{ textAlign:"right", padding:"4px 6px", color:"#94a3b8", fontWeight:600 }}>F</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {["bf","lu","dn","sn"].flatMap((m,mi) => {
+                    const sel = selections[`${viewDate}_${m}`];
+                    const lists = [BREAKFASTS, LUNCHES, DINNERS, SNACKS];
+                    const opt = sel ? lists[mi].find(o=>o.id===sel) : null;
+                    if (!opt || opt.items.length===0) return [];
+                    return opt.items.map((it,ii) => (
+                      <tr key={`${m}${ii}`} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                        <td style={{ padding:"4px 6px", color:"#475569" }}>{it[0]}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"right", color:"#1e293b", fontWeight:600 }}>{it[1]}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"right", color:"#3b82f6" }}>{it[2]}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"right", color:"#f59e0b" }}>{it[3]}</td>
+                        <td style={{ padding:"4px 6px", textAlign:"right", color:"#ef4444" }}>{it[4]}</td>
+                      </tr>
+                    ));
+                  })}
+                  {/* 기타 항목 */}
+                  {dayExtras.map((e, i) => (
+                    <tr key={`ex${i}`} style={{ borderBottom:"1px solid #f1f5f9", background:"#fefce8" }}>
+                      <td style={{ padding:"4px 6px", color:"#475569" }}>{e.name} <span style={{fontSize:9,color:"#94a3b8"}}>(기타)</span></td>
+                      <td style={{ padding:"4px 6px", textAlign:"right", color:"#1e293b", fontWeight:600 }}>{e.kcal}</td>
+                      <td style={{ padding:"4px 6px", textAlign:"right", color:"#3b82f6" }}>{e.protein}</td>
+                      <td style={{ padding:"4px 6px", textAlign:"right", color:"#f59e0b" }}>{e.carb}</td>
+                      <td style={{ padding:"4px 6px", textAlign:"right", color:"#ef4444" }}>{e.fat}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ borderTop:"2px solid #cbd5e1" }}>
+                    <td style={{ padding:"4px 6px", fontWeight:800, color:"#1e293b" }}>합계</td>
+                    <td style={{ padding:"4px 6px", textAlign:"right", fontWeight:800, color:"#1e293b" }}>{dayTotals.kcal}</td>
+                    <td style={{ padding:"4px 6px", textAlign:"right", fontWeight:700, color:"#3b82f6" }}>{dayTotals.protein}</td>
+                    <td style={{ padding:"4px 6px", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{dayTotals.carb}</td>
+                    <td style={{ padding:"4px 6px", textAlign:"right", fontWeight:700, color:"#ef4444" }}>{dayTotals.fat}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
