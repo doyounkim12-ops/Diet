@@ -1,1 +1,176 @@
-.
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4월 체지방 감량 식단 플래너</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, sans-serif; }
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useCallback } = React;
+
+        // ── 데이터 ──────────────────────────────────────────────
+        const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
+
+        const BREAKFASTS = [
+            { id: "bf1", name: "삶은 달걀 2개 + 우유", items: [["삶은 달걀 2개",140,12,0,10],["우유 200ml",130,6,10,7]] },
+            { id: "bf2", name: "프로틴 쉐이크 + 바나나", items: [["프로틴 쉐이크",150,25,5,3],["바나나 1개",100,1,26,0]] },
+            { id: "bf3", name: "그릭요거트 + 아몬드", items: [["그릭요거트 200g",120,20,7,1],["아몬드 10알",70,3,2,6]] },
+            { id: "bf4", name: "두유 + 삶은 달걀 2개", items: [["두유 1팩",120,8,10,5],["삶은 달걀 2개",140,12,0,10]] },
+            { id: "bf5", name: "통밀토스트 + 삶은 달걀 2개", items: [["통밀토스트 1장",80,3,14,2],["삶은 달걀 2개",140,12,0,10]] },
+            { id: "bf6", name: "프로틴바 1개", items: [["프로틴바 1개",200,22,20,6]] },
+            { id: "bf7", name: "바나나 + 우유", items: [["바나나 1개",100,1,26,0],["우유 200ml",130,6,10,7]] },
+            { id: "bf0", name: "스킵 (안 먹음)", items: [] },
+        ];
+
+        const LUNCHES = [
+            { id:"lu1", name:"제육볶음 도시락", items:[["잡곡밥 2/3",210,5,46,1],["제육볶음 130g",235,22,8,13],["배추김치",15,1,3,0],["콩나물무침",30,3,3,1]] },
+            { id:"lu2", name:"소불고기 도시락", items:[["현미밥 2/3",200,4,44,1],["소불고기 130g",215,24,8,10],["시금치나물",25,2,3,1],["깍두기",15,1,3,0]] },
+            { id:"lu3", name:"참치캔 볶음 정식", items:[["현미밥 2/3",200,4,44,1],["참치캔 볶음",180,25,5,7],["무생채",20,1,4,0],["순두부찌개",100,8,5,5]] },
+            { id:"lu4", name:"닭가슴살 덮밥", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 간장조림 150g",180,34,5,2],["계란프라이 1개",90,6,0,7],["김치",15,1,3,0]] },
+            { id:"lu5", name:"소고기국밥", items:[["소고기국밥(밥포함)",420,24,50,12],["깍두기",15,1,3,0],["김치",15,1,3,0]] },
+            { id:"lu7", name:"닭가슴살 샌드위치", items:[["통밀빵 2장",160,6,28,3],["닭가슴살 120g",132,28,0,2],["양상추+토마토",20,1,4,0],["슬라이스치즈 1장",60,4,0,5],["우유 200ml",130,6,10,7]] },
+            { id:"lu11", name:"편의점 조합", items:[["닭가슴살 팩 1개",110,23,2,1],["고구마 1개(중)",130,2,30,0],["삶은달걀 2개",140,12,0,10],["두유 1팩",120,8,10,5]] },
+        ];
+
+        const DINNERS = [
+            { id:"dn1", name:"연어구이 + 현미밥", items:[["현미밥 2/3",200,4,44,1],["연어구이 150g",275,31,0,16],["그린샐러드",80,2,5,6],["계란프라이 1개",90,6,0,7]] },
+            { id:"dn2", name:"닭가슴살 + 고구마", items:[["고구마 1.5개",195,3,45,0],["닭가슴살 200g",220,46,0,3],["브로콜리 데침",30,3,4,0],["아몬드 10알",70,3,2,6]] },
+            { id:"dn4", name:"소고기 스테이크", items:[["현미밥 2/3",200,4,44,1],["소고기 스테이크 130g",260,34,0,13],["구운채소",50,2,10,1],["계란말이 2개",150,10,2,11]] },
+            { id:"dn10", name:"간장계란밥 + 닭가슴살", items:[["햇반 발아현미밥",200,4,43,1],["삶은 반숙란 5개",350,30,0,25],["닭가슴살 2쪽",140,28,4,2],["들기름 1스푼",45,0,0,5]] },
+        ];
+
+        const SNACKS = [
+            { id:"sn1", name:"그릭요거트 + 아몬드", items:[["그릭요거트 150g",90,15,5,1],["아몬드 15알",105,4,3,9]] },
+            { id:"sn2", name:"프로틴바 1개", items:[["프로틴바 1개",200,22,20,6]] },
+            { id:"sn5", name:"프로틴 쉐이크 + 사과", items:[["프로틴 쉐이크",150,25,5,3],["사과 1/2개",50,0,13,0]] },
+            { id:"sn0", name:"안 먹음", items:[] },
+        ];
+
+        const sumItems = (items) => items.reduce((a, x) => ({ kcal: a.kcal+x[1], protein: a.protein+x[2], carb: a.carb+x[3], fat: a.fat+x[4] }), { kcal:0, protein:0, carb:0, fat:0 });
+
+        const DOW = ["일","월","화","수","목","금","토"];
+        const DAYS = Array.from({length:30}, (_,i) => {
+            const d = new Date(2026, 3, i+1);
+            return { date: i+1, dow: DOW[d.getDay()] };
+        });
+
+        // ── 컴포넌트 ────────────────────────────────────────────
+        const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
+            const r = (size - stroke) / 2;
+            const circ = 2 * Math.PI * r;
+            const p = Math.min(pct, 100);
+            return (
+                <svg width={size} height={size} style={{ transform:"rotate(-90deg)" }}>
+                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
+                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+                        strokeDasharray={circ} strokeDashoffset={circ * (1 - p/100)} strokeLinecap="round"
+                        style={{ transition:"stroke-dashoffset 0.4s ease" }} />
+                    <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
+                        style={{ transform:"rotate(90deg)", transformOrigin:"center", fontSize:size*0.22, fontWeight:700, fill:color }}>
+                        {Math.round(p)}%
+                    </text>
+                </svg>
+            );
+        };
+
+        const MealSelector = ({ label, options, value, onChange, onReset, accent }) => {
+            const [open, setOpen] = useState(false);
+            const selected = options.find(o => o.id === value);
+            const totals = selected ? sumItems(selected.items) : null;
+            return (
+                <div style={{ marginBottom: 12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 4 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform:"uppercase" }}>{label}</div>
+                        {value && <button onClick={onReset} style={{ fontSize:10, color:"#ef4444", border:"none", background:"none", cursor:"pointer" }}>reset</button>}
+                    </div>
+                    <div onClick={() => setOpen(!open)}
+                        style={{ padding:"10px 12px", background: value ? "#f0fdf4" : "#f8fafc", border: value ? "1.5px solid #86efac" : "1.5px solid #e2e8f0", borderRadius: 10, cursor:"pointer", display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontSize: 13, fontWeight: value ? 600 : 400 }}>{selected ? selected.name : "메뉴 선택"}</span>
+                        {totals && <span style={{ fontSize: 11, color:"#6b7280" }}>{totals.kcal}kcal</span>}
+                    </div>
+                    {open && (
+                        <div style={{ marginTop: 4, border:"1px solid #e2e8f0", borderRadius: 8, background:"#fff", maxHeight: 180, overflowY:"auto", position:"absolute", width:"calc(100% - 24px)", maxWidth:456, zIndex:10, boxShadow:"0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
+                            {options.map(o => (
+                                <div key={o.id} onClick={() => { onChange(o.id); setOpen(false); }} style={{ padding:"10px 12px", fontSize:13, borderBottom:"1px solid #f1f5f9", cursor:"pointer" }}>
+                                    {o.name} <span style={{ float:"right", color:"#94a3b8" }}>{sumItems(o.items).kcal}kcal</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ExtraInput = ({ extras, onAdd, onRemove }) => {
+            const [name, setName] = useState("");
+            const [kcal, setKcal] = useState("");
+            const [expanded, setExpanded] = useState(false);
+            const handleAdd = () => { if(name && kcal) { onAdd({name, kcal:Number(kcal), protein:0, carb:0, fat:0}); setName(""); setKcal(""); setExpanded(false); } };
+            return (
+                <div style={{ marginTop: 8 }}>
+                    {extras.map((e, i) => (
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", background:"#f1f5f9", padding:"6px 10px", borderRadius:6, marginBottom:4, fontSize:12 }}>
+                            <span>{e.name} ({e.kcal}kcal)</span>
+                            <button onClick={() => onRemove(i)} style={{ border:"none", background:"none", color:"#94a3b8", cursor:"pointer" }}>×</button>
+                        </div>
+                    ))}
+                    {!expanded ? (
+                        <button onClick={() => setExpanded(true)} style={{ width:"100%", padding:8, border:"1px dashed #cbd5e1", borderRadius:8, background:"none", color:"#94a3b8", fontSize:12, cursor:"pointer" }}>+ 기타 음식 추가</button>
+                    ) : (
+                        <div style={{ display:"flex", gap:4 }}>
+                            <input value={name} onChange={e=>setName(e.target.value)} placeholder="음식명" style={{ flex:2, padding:6, borderRadius:6, border:"1px solid #e2e8f0" }} />
+                            <input value={kcal} onChange={e=>setKcal(e.target.value)} type="number" placeholder="kcal" style={{ flex:1, padding:6, borderRadius:6, border:"1px solid #e2e8f0" }} />
+                            <button onClick={handleAdd} style={{ padding:"0 10px", background:"#1e40af", color:"#fff", border:"none", borderRadius:6 }}>+</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ── 메인 앱 ─────────────────────────────────────────────
+        function App() {
+            const [selections, setSelections] = useState({});
+            const [extras, setExtras] = useState({});
+            const [viewDate, setViewDate] = useState(1);
+
+            const getDayTotals = useCallback((day) => {
+                const meals = ["bf","lu","dn","sn"];
+                const lists = [BREAKFASTS, LUNCHES, DINNERS, SNACKS];
+                let total = { kcal:0, protein:0, carb:0, fat:0 };
+                meals.forEach((m,i) => {
+                    const sel = selections[`${day}_${m}`];
+                    if (sel) {
+                        const opt = lists[i].find(o=>o.id===sel);
+                        if (opt) { const s=sumItems(opt.items); total.kcal+=s.kcal; total.protein+=s.protein; total.carb+=s.carb; total.fat+=s.fat; }
+                    }
+                });
+                (extras[day]||[]).forEach(e => { total.kcal += e.kcal; });
+                return total;
+            }, [selections, extras]);
+
+            const monthStats = useMemo(() => {
+                let totalKcal=0, filledDays=0;
+                DAYS.forEach(d => { const t = getDayTotals(d.date); if(t.kcal > 0) { filledDays++; totalKcal+=t.kcal; } });
+                return { filledDays, avgKcal: filledDays ? Math.round(totalKcal/filledDays) : 0 };
+            }, [getDayTotals]);
+
+            const dayInfo = DAYS[viewDate - 1];
+            const dayTotals = getDayTotals(viewDate);
+
+            return (
+                <div style={{ minHeight:"100vh", background:"#f8fafc" }}>
+                    <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3
