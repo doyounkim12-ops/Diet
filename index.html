@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
- 
+
 // ── 데이터 ──────────────────────────────────────────────
 const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
- 
+
 const BREAKFASTS = [
   { id: "bf1", name: "삶은 달걀 2개 + 우유", items: [["삶은 달걀 2개",140,12,0,10],["우유 200ml",130,6,10,7]] },
   { id: "bf2", name: "프로틴 쉐이크 + 바나나", items: [["프로틴 쉐이크",150,25,5,3],["바나나 1개",100,1,26,0]] },
@@ -13,7 +13,7 @@ const BREAKFASTS = [
   { id: "bf7", name: "바나나 + 우유", items: [["바나나 1개",100,1,26,0],["우유 200ml",130,6,10,7]] },
   { id: "bf0", name: "스킵 (안 먹음)", items: [] },
 ];
- 
+
 const LUNCHES = [
   // ── 한식 (간편) ──
   { id:"lu1", name:"제육볶음 도시락", items:[["잡곡밥 2/3",210,5,46,1],["제육볶음 130g",235,22,8,13],["배추김치",15,1,3,0],["콩나물무침",30,3,3,1]] },
@@ -29,7 +29,7 @@ const LUNCHES = [
   { id:"lu10", name:"연어 포케 보울", items:[["현미밥 2/3",200,4,44,1],["훈제연어 100g",180,22,0,10],["아보카도 1/4",60,1,3,5],["오이+양파+당근",25,1,5,0],["계란프라이 1개",90,6,0,7]] },
   { id:"lu11", name:"편의점 조합 (닭가슴살+고구마)", items:[["닭가슴살 팩 1개",110,23,2,1],["고구마 1개(중)",130,2,30,0],["삶은달걀 2개",140,12,0,10],["두유 1팩",120,8,10,5]] },
 ];
- 
+
 const DINNERS = [
   { id:"dn1", name:"연어구이 + 현미밥", items:[["현미밥 2/3",200,4,44,1],["연어구이 150g",275,31,0,16],["그린샐러드(올리브유)",80,2,5,6],["계란프라이 1개",90,6,0,7]] },
   { id:"dn2", name:"닭가슴살 200g + 고구마", items:[["고구마 1.5개",195,3,45,0],["닭가슴살 200g",220,46,0,3],["브로콜리 데침",30,3,4,0],["양배추 샐러드",40,1,6,1],["아몬드 10알",70,3,2,6]] },
@@ -42,7 +42,7 @@ const DINNERS = [
   { id:"dn9", name:"닭가슴살 볶음 + 두부김치", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 볶음",200,32,5,5],["계란프라이 1개",90,6,0,7],["두부김치",120,10,5,7],["방울토마토",30,1,6,0]] },
   { id:"dn10", name:"간장계란밥 + 블페 닭가슴살", items:[["햇반 발아현미밥 (소)",200,4,43,1],["삶은 반숙란 5개",350,30,0,25],["하림 블랙페퍼 닭가슴살 2쪽",140,28,4,2],["들기름 1스푼",45,0,0,5],["간장 약간",5,1,1,0]] },
 ];
- 
+
 const SNACKS = [
   { id:"sn1", name:"그릭요거트 + 아몬드", items:[["그릭요거트 150g",90,15,5,1],["아몬드 15알",105,4,3,9]] },
   { id:"sn2", name:"프로틴바 1개", items:[["프로틴바 1개",200,22,20,6]] },
@@ -53,15 +53,15 @@ const SNACKS = [
   { id:"sn7", name:"삶은달걀 + 두유", items:[["삶은 달걀 1개",70,6,0,5],["두유 1팩",120,8,10,5]] },
   { id:"sn0", name:"안 먹음", items:[] },
 ];
- 
+
 const sumItems = (items) => items.reduce((a, x) => ({ kcal: a.kcal+x[1], protein: a.protein+x[2], carb: a.carb+x[3], fat: a.fat+x[4] }), { kcal:0, protein:0, carb:0, fat:0 });
- 
+
 const DOW = ["일","월","화","수","목","금","토"];
 const DAYS = Array.from({length:30}, (_,i) => {
   const d = new Date(2026, 3, i+1);
   return { date: i+1, dow: DOW[d.getDay()] };
 });
- 
+
 // ── 컴포넌트 ────────────────────────────────────────────
 const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
   const r = (size - stroke) / 2;
@@ -80,7 +80,7 @@ const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
     </svg>
   );
 };
- 
+
 const MealSelector = ({ label, options, value, onChange, onReset, accent }) => {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.id === value);
@@ -133,7 +133,7 @@ const MealSelector = ({ label, options, value, onChange, onReset, accent }) => {
     </div>
   );
 };
- 
+
 // ── 기타 수동 입력 ──────────────────────────────────────
 const ExtraInput = ({ extras, onAdd, onRemove }) => {
   const [name, setName] = useState("");
@@ -142,15 +142,15 @@ const ExtraInput = ({ extras, onAdd, onRemove }) => {
   const [carb, setCarb] = useState("");
   const [fat, setFat] = useState("");
   const [expanded, setExpanded] = useState(false);
- 
+
   const handleAdd = () => {
     if (!name.trim() || !kcal) return;
     onAdd({ name: name.trim(), kcal: Number(kcal)||0, protein: Number(protein)||0, carb: Number(carb)||0, fat: Number(fat)||0 });
     setName(""); setKcal(""); setProtein(""); setCarb(""); setFat("");
   };
- 
+
   const inputStyle = { fontSize:12, padding:"6px 8px", border:"1px solid #e2e8f0", borderRadius:6, outline:"none", width:"100%", boxSizing:"border-box" };
- 
+
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 3 }}>
@@ -159,7 +159,7 @@ const ExtraInput = ({ extras, onAdd, onRemove }) => {
           <span style={{ fontSize:10, color:"#94a3b8" }}>{extras.reduce((s,e)=>s+e.kcal,0)}kcal</span>
         )}
       </div>
- 
+
       {/* 추가된 항목들 */}
       {extras.map((e, i) => (
         <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 10px",
@@ -179,7 +179,7 @@ const ExtraInput = ({ extras, onAdd, onRemove }) => {
           </div>
         </div>
       ))}
- 
+
       {/* 입력 폼 */}
       <div onClick={() => !expanded && setExpanded(true)}
         style={{ padding: expanded ? "10px" : "8px 12px",
@@ -228,25 +228,25 @@ const ExtraInput = ({ extras, onAdd, onRemove }) => {
     </div>
   );
 };
- 
+
 // ── 메인 앱 ─────────────────────────────────────────────
 export default function App() {
   const [selections, setSelections] = useState({});
   const [extras, setExtras] = useState({}); // { "1": [{name,kcal,protein,carb,fat}, ...], ... }
   const [viewDate, setViewDate] = useState(1);
- 
+
   const set = useCallback((day, meal, id) => {
     setSelections(prev => ({ ...prev, [`${day}_${meal}`]: id }));
   }, []);
- 
+
   const reset = useCallback((day, meal) => {
     setSelections(prev => { const n = {...prev}; delete n[`${day}_${meal}`]; return n; });
   }, []);
- 
+
   const addExtra = useCallback((day, item) => {
     setExtras(prev => ({ ...prev, [day]: [...(prev[day]||[]), item] }));
   }, []);
- 
+
   const removeExtra = useCallback((day, idx) => {
     setExtras(prev => {
       const list = [...(prev[day]||[])];
@@ -254,7 +254,7 @@ export default function App() {
       return { ...prev, [day]: list };
     });
   }, []);
- 
+
   const getDayTotals = useCallback((day) => {
     const meals = ["bf","lu","dn","sn"];
     const lists = [BREAKFASTS, LUNCHES, DINNERS, SNACKS];
@@ -272,7 +272,7 @@ export default function App() {
     });
     return total;
   }, [selections, extras]);
- 
+
   const monthStats = useMemo(() => {
     let totalKcal=0, totalProtein=0, totalCarb=0, totalFat=0, filledDays=0;
     DAYS.forEach(d => {
@@ -281,12 +281,12 @@ export default function App() {
     });
     return { totalKcal, totalProtein, totalCarb, totalFat, filledDays, avgKcal: filledDays ? Math.round(totalKcal/filledDays) : 0 };
   }, [getDayTotals]);
- 
+
   const dayInfo = DAYS[viewDate - 1];
   const dayTotals = getDayTotals(viewDate);
   const dayExtras = extras[viewDate] || [];
   const dayFilled = dayTotals.kcal > 0;
- 
+
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#f8fafc 0%,#e0e7ff 100%)", fontFamily:"'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       {/* 헤더 */}
@@ -294,7 +294,7 @@ export default function App() {
         <div style={{ maxWidth:480, margin:"0 auto" }}>
           <h1 style={{ fontSize:20, fontWeight:800, margin:0 }}>4월 체지방 감량 식단</h1>
           <p style={{ fontSize:12, opacity:.8, margin:"4px 0 0" }}>목표: 체지방 -1.5kg / 일일 1,850kcal</p>
- 
+
           {/* 월간 요약 */}
           <div style={{ display:"flex", gap:12, marginTop:14, background:"rgba(255,255,255,.12)", borderRadius:12, padding:"12px 14px" }}>
             <div style={{ textAlign:"center", flex:1 }}>
@@ -314,7 +314,7 @@ export default function App() {
           </div>
         </div>
       </div>
- 
+
       {/* 달력 */}
       <div style={{ maxWidth:480, margin:"0 auto", padding:"12px 12px 0" }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
@@ -347,7 +347,7 @@ export default function App() {
           })}
         </div>
       </div>
- 
+
       {/* 선택된 날 상세 */}
       <div style={{ maxWidth:480, margin:"0 auto", padding:"16px 12px 100px" }}>
         <div style={{ background:"#fff", borderRadius:16, padding:16, boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
@@ -364,7 +364,7 @@ export default function App() {
               </div>
             )}
           </div>
- 
+
           {/* 영양소 바 */}
           {dayFilled && (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14, padding:"10px 0", borderTop:"1px solid #f1f5f9", borderBottom:"1px solid #f1f5f9" }}>
@@ -383,16 +383,16 @@ export default function App() {
               ))}
             </div>
           )}
- 
+
           {/* 식사 선택기 */}
           <MealSelector label="아침 (간단히)" options={BREAKFASTS} value={selections[`${viewDate}_bf`] || ""} onChange={id => set(viewDate,"bf",id)} onReset={() => reset(viewDate,"bf")} accent="#f59e0b" />
           <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`] || ""} onChange={id => set(viewDate,"lu",id)} onReset={() => reset(viewDate,"lu")} accent="#3b82f6" />
           <MealSelector label="저녁 (든든히)" options={DINNERS} value={selections[`${viewDate}_dn`] || ""} onChange={id => set(viewDate,"dn",id)} onReset={() => reset(viewDate,"dn")} accent="#8b5cf6" />
           <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`] || ""} onChange={id => set(viewDate,"sn",id)} onReset={() => reset(viewDate,"sn")} accent="#10b981" />
- 
+
           {/* 기타 수동 입력 */}
           <ExtraInput extras={dayExtras} onAdd={(item) => addExtra(viewDate, item)} onRemove={(idx) => removeExtra(viewDate, idx)} />
- 
+
           {/* 선택된 메뉴 상세 */}
           {dayFilled && (
             <div style={{ marginTop:12, background:"#f8fafc", borderRadius:10, padding:12 }}>
