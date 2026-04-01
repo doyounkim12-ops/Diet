@@ -173,4 +173,51 @@
 
             return (
                 <div style={{ minHeight:"100vh", background:"#f8fafc" }}>
-                    <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3
+                    <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3aed)", padding:"24px 16px", color:"#fff" }}>
+                        <div style={{ maxWidth:480, margin:"0 auto" }}>
+                            <h1 style={{ fontSize:20, margin:0 }}>4월 식단 로그</h1>
+                            <div style={{ display:"flex", gap:16, marginTop:16 }}>
+                                <div><div style={{fontSize:10, opacity:0.8}}>기록 일수</div><div style={{fontSize:20, fontWeight:800}}>{monthStats.filledDays}일</div></div>
+                                <div><div style={{fontSize:10, opacity:0.8}}>평균 섭취</div><div style={{fontSize:20, fontWeight:800}}>{monthStats.avgKcal} kcal</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ maxWidth:480, margin:"-20px auto 0", padding:"0 12px" }}>
+                        <div style={{ background:"#fff", borderRadius:16, padding:12, boxShadow:"0 4px 6px -1px rgb(0 0 0 / 0.1)", display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+                            {[...Array(3)].map((_,i) => <div key={i} />)}
+                            {DAYS.map(d => {
+                                const active = viewDate === d.date;
+                                const filled = getDayTotals(d.date).kcal > 0;
+                                return (
+                                    <div key={d.date} onClick={() => setViewDate(d.date)} style={{ textAlign:"center", padding:"8px 0", borderRadius:10, cursor:"pointer", background: active ? "#1e40af" : "none", color: active ? "#fff" : "#1e293b", border: filled && !active ? "1.5px solid #86efac" : "1.5px solid transparent" }}>
+                                        <div style={{ fontSize:12, fontWeight:700 }}>{d.date}</div>
+                                        <div style={{ fontSize:8, opacity:0.5 }}>{d.dow}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ background:"#fff", borderRadius:16, padding:20, marginTop:16, boxShadow:"0 1px 3px rgba(0,0,0,0.1)" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:20 }}>
+                                <h2 style={{ fontSize:18, margin:0 }}>4월 {dayInfo.date}일 ({dayInfo.dow})</h2>
+                                <ProgressRing pct={(dayTotals.kcal/DAILY_TARGET.kcal)*100} color={dayTotals.kcal > 1900 ? "#ef4444" : "#22c55e"} size={44} stroke={4} />
+                            </div>
+
+                            <MealSelector label="아침" options={BREAKFASTS} value={selections[`${viewDate}_bf`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_bf`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_bf`]; return n;})} accent="#f59e0b" />
+                            <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_lu`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_lu`]; return n;})} accent="#3b82f6" />
+                            <MealSelector label="저녁" options={DINNERS} value={selections[`${viewDate}_dn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_dn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_dn`]; return n;})} accent="#8b5cf6" />
+                            <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_sn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_sn`]; return n;})} accent="#10b981" />
+                            
+                            <ExtraInput extras={extras[viewDate]||[]} onAdd={item => setExtras(p=>({...p, [viewDate]:[...(p[viewDate]||[]), item]}))} onRemove={idx => setExtras(p=>{const l=[...p[viewDate]]; l.splice(idx,1); return {...p, [viewDate]:l};})} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
