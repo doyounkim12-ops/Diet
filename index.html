@@ -17,13 +17,119 @@
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useMemo, useCallback } = React;
 
-        // ── 데이터 ──────────────────────────────────────────────
-        const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
+        // ── 레시피 데이터 ──────────────────────────────────────
+        const RECIPES = {
+            lu3: {
+                intro: "참치캔의 셀레늄은 항산화 작용이 뛰어나 미세 손상 회복에 좋습니다.",
+                ingredients: "참치 1캔, 양파 1/2개, 마늘 3~4알, 대파, 간장 1큰술, 올리브유",
+                steps: [
+                    "참치캔의 기름을 적당히 짜냅니다. (가공된 면실유 대신 올리브유를 사용하기 위함입니다.)",
+                    "팬에 올리브유를 두르고 편마늘과 다진 대파를 볶아 향을 냅니다.",
+                    "다진 양파를 넣고 투명해질 때까지 볶다가 참치를 넣습니다.",
+                    "간장 1큰술로 간을 하고, 마지막에 후추를 넉넉히 뿌립니다."
+                ],
+                tip: "반드시 흰쌀밥 1공기와 함께 드세요. 참치의 짭조름한 맛이 혈장량을 늘리는 데 도움을 줍니다."
+            },
+            lu4: {
+                intro: "닭가슴살의 퍽퍽함을 잡고 소화가 잘 되게 만드는 것이 핵심입니다.",
+                ingredients: "닭가슴살 150g, 계란 2개, 양파 1/2개, 간장 2큰술, 알룰로스(혹은 올리고당) 1큰술, 물 5큰술",
+                steps: [
+                    "닭가슴살을 한입 크기로 썰어 소금, 후추로 밑간합니다.",
+                    "팬에 양파를 깔고 간장, 물, 알룰로스를 섞은 소스를 부어 끓입니다.",
+                    "소스가 끓으면 닭가슴살을 넣고 익힙니다.",
+                    "닭이 거의 다 익었을 때 계란물을 둘러 부드럽게 익힙니다.",
+                    "밥 위에 그대로 얹어 덮밥으로 즐깁니다."
+                ],
+                tip: "계란의 레시틴 성분은 신경계 회복에 좋습니다. 닭가슴살만 먹을 때보다 훨씬 부드러워 소화에 유리합니다."
+            },
+            lu7: {
+                intro: "훈련을 쉴 때도 탄수화물은 필요하므로, 통밀빵 등을 활용해 에너지를 채웁니다.",
+                ingredients: "닭가슴살, 통밀빵(혹은 식빵) 2장, 아보카도 1/2개, 상추/토마토, 홀그레인 머스터드",
+                steps: [
+                    "빵을 살짝 구워 한쪽 면에 홀그레인 머스터드를 바릅니다.",
+                    "아보카도를 으깨어 빵에 펴 바릅니다.",
+                    "그 위에 구운 닭가슴살, 토마토, 상추 순으로 올립니다.",
+                    "기호에 따라 올리브유를 닭가슴살 위에 한 번 더 살짝 뿌려 풍미를 더합니다."
+                ],
+                tip: "아보카도의 칼륨은 심박수와 혈압을 안정시키는 데 탁월한 역할을 합니다."
+            },
+            dn14: {
+                intro: "단백질 흡수율이 높은 두부와 발효 식품인 김치는 피로 회복에 아주 좋습니다.",
+                ingredients: "두부 1모, 잘 익은 김치 1/4포기, 돼지고기 조금(선택), 들기름 2큰술, 간장 1큰술",
+                steps: [
+                    "두부 데치기: 두부는 끓는 물에 소금을 살짝 넣고 5분 정도 따뜻하게 데쳐냅니다.",
+                    "김치 볶기: 팬에 들기름을 두르고 김치를 충분히 볶습니다. 고기가 있다면 이때 같이 볶아주세요.",
+                    "마무리: 볶은 김치 위에 다시 한번 들기름을 살짝 둘러 풍미를 살립니다."
+                ],
+                tip: "들기름은 오메가-3가 매우 풍부해 염증 완화에 탁월합니다. 회복 식단에 가장 적합한 지방입니다."
+            },
+            dn15: {
+                intro: "소화 기관의 부담을 줄이고 수분 보충까지 동시에 할 수 있는 메뉴입니다.",
+                ingredients: "순두부 1봉, 바지락(또는 다진 돼지고기), 고춧가루, 국간장, 계란 2~3개, 밥 1공기",
+                steps: [
+                    "팬에 올리브유를 살짝 두르고 고춧가루와 고기를 볶아 고추기름을 냅니다.",
+                    "물을 붓고 끓으면 순두부를 넣고 간장과 소금으로 간을 합니다.",
+                    "계란밥: 따뜻한 밥 위에 계란 프라이 2개를 얹고, 간장과 목초 버터 한 조각을 넣어 비빕니다."
+                ],
+                tip: "순두부찌개의 뜨끈한 국물은 수분과 염분을 동시에 공급해 줄어든 혈장량을 채우는 데 매우 효과적입니다."
+            },
+            dn16: {
+                intro: "구운 고기보다 수육이 소화가 훨씬 잘 되어 회복기에 적합합니다.",
+                ingredients: "돼지고기 앞다리살 또는 삼겹살 500g, 대파, 마늘, 양파, 된장 1큰술, 월계수잎",
+                steps: [
+                    "냄비에 고기가 잠길 만큼 물을 붓고 대파, 마늘, 된장 등을 넣어 끓입니다.",
+                    "물이 끓으면 고기를 넣고 40~50분간 푹 삶습니다.",
+                    "다 익은 고기를 바로 썰지 말고 5~10분간 그대로 두어 육즙을 가둡니다."
+                ],
+                tip: "쌈장이나 새우젓과 함께 드시며 염분을 충분히 섭취하세요. 수육은 지친 근육을 재건하는 데 가장 효율적인 메뉴입니다."
+            },
+            dn17: {
+                intro: "카레의 강황 성분은 운동선수들의 근육통 완화에 처방될 정도로 효과가 좋습니다.",
+                ingredients: "닭가슴살 200g, 감자, 당근, 양파, 카레 가루, 목초 버터",
+                steps: [
+                    "감자와 당근, 양파를 깍둑썰기하여 팬에 목초 버터를 두르고 충분히 볶습니다.",
+                    "닭가슴살을 넣고 겉면이 익을 때까지 같이 볶습니다.",
+                    "물과 카레 가루를 넣고 걸쭉해질 때까지 끓입니다."
+                ],
+                tip: "카레가 완성된 후 올리브유를 한 큰술 뿌려 드세요. 카레의 유효 성분은 지방과 함께 먹을 때 흡수율이 수십 배 높아집니다."
+            },
+            dn18: {
+                intro: "올리브유의 항염 성분이 운동으로 쌓인 미세 손상 회복을 돕습니다. 올리브유를 가장 효과적으로 활용할 수 있는 요리입니다.",
+                ingredients: "닭다리살 200g, 소금, 후추, 로즈마리(혹은 허브), 올리브유 2큰술, 마늘, 방울토마토",
+                steps: [
+                    "닭다리살을 소금, 후추, 로즈마리(혹은 허브)에 재워둡니다.",
+                    "프라이팬이나 에어프라이어에 닭다리살을 충분히 굽습니다.",
+                    "다 익은 닭다리살 위에 신선한 올리브유를 '드레싱'처럼 듬뿍 뿌려 드세요."
+                ],
+                tip: "구운 마늘과 방울토마토를 곁들이면 맛과 영양 모두 완벽합니다."
+            },
+            dn19: {
+                intro: "지방을 통한 호르몬 수치 정상화와 신경계 회복에 도움을 줍니다. 에너지를 밀도 있게 채워주는 식단입니다.",
+                ingredients: "닭다리살 200g, 목초 버터 10g, 찐 단호박 100g, 소금, 후추",
+                steps: [
+                    "닭다리살의 껍질 부분부터 바삭하게 굽기 시작합니다.",
+                    "마지막에 목초 버터 한 조각을 넣어 녹이면서 숟가락으로 버터를 닭고기에 계속 끼얹어줍니다(베이스팅).",
+                    "버터가 타지 않게 주의하며 풍미를 입히는 것이 핵심입니다."
+                ],
+                tip: "찐 단호박과 함께 드시면 글리코겐 충전에도 좋습니다."
+            },
+            dn20: {
+                intro: "소화가 편하고 수분 보충까지 동시에 할 수 있는 요리입니다. 따뜻한 스튜는 소화 부담을 줄여주어 수면의 질을 높여줍니다.",
+                ingredients: "닭다리살 150g, 토마토 홀(캔) 1개, 양파 1/2개, 브로콜리, 올리브유 1큰술, 소금, 후추",
+                steps: [
+                    "닭다리살, 토마토 홀(캔), 양파, 브로콜리를 냄비에 넣고 푹 끓입니다.",
+                    "소금, 후추로 간을 맞춥니다.",
+                    "마지막에 올리브유 한 큰술을 두릅니다."
+                ],
+                tip: "토마토의 라이코펜은 익혔을 때 흡수율이 높아지며 강한 항산화 작용을 합니다."
+            }
+        };
 
+        // ── 식단 데이터 ──────────────────────────────────────────────
+        const DAILY_TARGET = { kcal: 1850, protein: 139, carb: 208, fat: 51 };
         const BREAKFASTS = [
             { id: "bf1", name: "삶은 달걀 2개 + 우유", items: [["삶은 달걀 2개",140,12,0,10],["우유 200ml",130,6,10,7]] },
             { id: "bf2", name: "프로틴 쉐이크 + 바나나", items: [["프로틴 쉐이크",150,25,5,3],["바나나 1개",100,1,26,0]] },
@@ -34,7 +140,6 @@
             { id: "bf7", name: "바나나 + 우유", items: [["바나나 1개",100,1,26,0],["우유 200ml",130,6,10,7]] },
             { id: "bf0", name: "스킵 (안 먹음)", items: [] },
         ];
-
         const LUNCHES = [
             { id:"lu3", name:"참치캔 볶음 정식", items:[["현미밥 2/3",200,4,44,1],["참치캔 볶음",180,25,5,7],["무생채",20,1,4,0],["순두부찌개",100,8,5,5]] },
             { id:"lu4", name:"닭가슴살 덮밥", items:[["잡곡밥 2/3",210,5,46,1],["닭가슴살 간장조림 150g",180,34,5,2],["계란프라이 1개",90,6,0,7],["김치",15,1,3,0]] },
@@ -43,9 +148,8 @@
             { id:"lu12", name:"연어구이 + 현미밥", items:[["현미밥 2/3",200,4,44,1],["연어구이 150g",275,31,0,16],["그린샐러드",80,2,5,6],["계란프라이 1개",90,6,0,7]] },
             { id:"lu13", name:"닭가슴살 + 고구마", items:[["고구마 1.5개",195,3,45,0],["닭가슴살 200g",220,46,0,3],["브로콜리 데침",30,3,4,0],["아몬드 10알",70,3,2,6]] },
         ];
-
         const DINNERS = [
-            { id:"dn4", name:"소고기 스테이크", items:[["현미밥 2/3",200,4,44,1],["소고기 스테이크 130g",260,34,0,13],["구운채소",50,2,10,1],["계란말이 2개",150,10,2,11]] },
+            { id:"dn4",  name:"소고기 스테이크", items:[["현미밥 2/3",200,4,44,1],["소고기 스테이크 130g",260,34,0,13],["구운채소",50,2,10,1],["계란말이 2개",150,10,2,11]] },
             { id:"dn10", name:"간장계란밥 + 닭가슴살", items:[["햇반 발아현미밥",200,4,43,1],["삶은 반숙란 5개",350,30,0,25],["닭가슴살 2쪽",140,28,4,2],["들기름 1스푼",45,0,0,5]] },
             { id:"dn11", name:"제육볶음 도시락", items:[["잡곡밥 2/3",210,5,46,1],["제육볶음 130g",235,22,8,13],["배추김치",15,1,3,0],["콩나물무침",30,3,3,1]] },
             { id:"dn12", name:"소불고기 도시락", items:[["현미밥 2/3",200,4,44,1],["소불고기 130g",215,24,8,10],["시금치나물",25,2,3,1],["깍두기",15,1,3,0]] },
@@ -54,22 +158,86 @@
             { id:"dn15", name:"순두부찌개 + 계란밥", items:[["잡곡밥 2/3",210,5,46,1],["순두부찌개",120,10,6,6],["계란프라이 1개",90,6,0,7],["김치",15,1,3,0]] },
             { id:"dn16", name:"돼지고기 수육 + 쌈", items:[["현미밥 2/3",200,4,44,1],["돼지 수육 150g",210,24,0,12],["쌈채소+쌈장",50,2,6,2],["깍두기",15,1,3,0]] },
             { id:"dn17", name:"닭가슴살 카레라이스", items:[["현미밥 2/3",200,4,44,1],["닭가슴살 150g",165,34,0,2],["카레소스(저칼로리)",80,2,12,3],["구운채소",50,2,10,1]] },
+            { id:"dn18", name:"지중해식 닭다리살 올리브유 구이 ⭐", items:[["닭다리살 200g",300,28,0,20],["올리브유 2큰술",240,0,0,27],["구운마늘+방울토마토",40,1,8,0]] },
+            { id:"dn19", name:"목초 버터 닭다리살 스테이크", items:[["닭다리살 200g",300,28,0,20],["목초 버터 10g",74,0,0,8],["찐 단호박 100g",85,2,20,0]] },
+            { id:"dn20", name:"닭다리살 토마토 스튜", items:[["닭다리살 150g",225,21,0,15],["토마토홀(캔)+채소",80,3,15,1],["브로콜리 데침",25,2,4,0],["올리브유 1큰술",120,0,0,14]] },
         ];
-
         const SNACKS = [
             { id:"sn1", name:"그릭요거트 + 아몬드", items:[["그릭요거트 150g",90,15,5,1],["아몬드 15알",105,4,3,9]] },
             { id:"sn2", name:"프로틴바 1개", items:[["프로틴바 1개",200,22,20,6]] },
             { id:"sn5", name:"프로틴 쉐이크 + 사과", items:[["프로틴 쉐이크",150,25,5,3],["사과 1/2개",50,0,13,0]] },
             { id:"sn0", name:"안 먹음", items:[] },
         ];
-
         const sumItems = (items) => items.reduce((a, x) => ({ kcal: a.kcal+x[1], protein: a.protein+x[2], carb: a.carb+x[3], fat: a.fat+x[4] }), { kcal:0, protein:0, carb:0, fat:0 });
-
         const DOW = ["일","월","화","수","목","금","토"];
         const DAYS = Array.from({length:30}, (_,i) => {
             const d = new Date(2026, 3, i+1);
             return { date: i+1, dow: DOW[d.getDay()] };
         });
+
+        // ── 레시피 모달 ─────────────────────────────────────────────
+        const RecipeModal = ({ recipeId, name, onClose }) => {
+            const recipe = RECIPES[recipeId];
+            if (!recipe) return null;
+            return (
+                <div
+                    onClick={onClose}
+                    style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:200, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px", width:"100%", maxWidth:480, maxHeight:"82vh", overflowY:"auto", boxSizing:"border-box" }}
+                    >
+                        {/* 헤더 */}
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+                            <div>
+                                <div style={{ fontSize:11, color:"#94a3b8", fontWeight:600, marginBottom:4 }}>📋 레시피</div>
+                                <h3 style={{ margin:0, fontSize:17, fontWeight:700, lineHeight:1.4 }}>{name}</h3>
+                            </div>
+                            <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:"50%", width:32, height:32, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginLeft:12 }}>✕</button>
+                        </div>
+
+                        {/* 소개 */}
+                        {recipe.intro && (
+                            <div style={{ background:"#f0f9ff", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#0369a1", marginBottom:16, lineHeight:1.6 }}>
+                                {recipe.intro}
+                            </div>
+                        )}
+
+                        {/* 재료 */}
+                        <div style={{ marginBottom:18 }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#f59e0b", marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+                                <span style={{ background:"#fef3c7", padding:"2px 8px", borderRadius:20 }}>🛒 재료</span>
+                            </div>
+                            <div style={{ background:"#fffbeb", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#78350f", lineHeight:1.7 }}>
+                                {recipe.ingredients}
+                            </div>
+                        </div>
+
+                        {/* 조리법 */}
+                        <div style={{ marginBottom:18 }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#3b82f6", marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+                                <span style={{ background:"#eff6ff", padding:"2px 8px", borderRadius:20 }}>🍳 조리법</span>
+                            </div>
+                            {recipe.steps.map((step, i) => (
+                                <div key={i} style={{ display:"flex", gap:12, marginBottom:10 }}>
+                                    <div style={{ width:24, height:24, background:"#3b82f6", borderRadius:"50%", color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>{i+1}</div>
+                                    <div style={{ fontSize:13, color:"#374151", lineHeight:1.6, paddingTop:2 }}>{step}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 팁 */}
+                        {recipe.tip && (
+                            <div style={{ background:"#f0fdf4", borderRadius:10, padding:"12px 14px", fontSize:13, color:"#166534", borderLeft:"3px solid #22c55e", lineHeight:1.6 }}>
+                                <span style={{ fontWeight:700 }}>💡 팁 </span>{recipe.tip}
+                            </div>
+                        )}
+                        <div style={{ height: 8 }} />
+                    </div>
+                </div>
+            );
+        };
 
         // ── 컴포넌트 ────────────────────────────────────────────
         const ProgressRing = ({ pct, color, size=48, stroke=5 }) => {
@@ -90,15 +258,26 @@
             );
         };
 
-        const MealSelector = ({ label, options, value, onChange, onReset, accent }) => {
+        const MealSelector = ({ label, options, value, onChange, onReset, accent, onViewRecipe }) => {
             const [open, setOpen] = useState(false);
             const selected = options.find(o => o.id === value);
             const totals = selected ? sumItems(selected.items) : null;
+            const hasRecipe = value && RECIPES[value];
             return (
                 <div style={{ marginBottom: 12 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 4 }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform:"uppercase" }}>{label}</div>
-                        {value && <button onClick={onReset} style={{ fontSize:10, color:"#ef4444", border:"none", background:"none", cursor:"pointer" }}>reset</button>}
+                        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                            {hasRecipe && (
+                                <button
+                                    onClick={() => onViewRecipe(value, selected.name)}
+                                    style={{ fontSize:10, color:"#3b82f6", border:"1px solid #bfdbfe", background:"#eff6ff", borderRadius:20, padding:"2px 8px", cursor:"pointer", fontWeight:600 }}
+                                >
+                                    📋 레시피
+                                </button>
+                            )}
+                            {value && <button onClick={onReset} style={{ fontSize:10, color:"#ef4444", border:"none", background:"none", cursor:"pointer" }}>reset</button>}
+                        </div>
                     </div>
                     <div onClick={() => setOpen(!open)}
                         style={{ padding:"10px 12px", background: value ? "#f0fdf4" : "#f8fafc", border: value ? "1.5px solid #86efac" : "1.5px solid #e2e8f0", borderRadius: 10, cursor:"pointer", display:"flex", justifyContent:"space-between" }}>
@@ -106,10 +285,15 @@
                         {totals && <span style={{ fontSize: 11, color:"#6b7280" }}>{totals.kcal}kcal</span>}
                     </div>
                     {open && (
-                        <div style={{ marginTop: 4, border:"1px solid #e2e8f0", borderRadius: 8, background:"#fff", maxHeight: 180, overflowY:"auto", position:"absolute", width:"calc(100% - 24px)", maxWidth:456, zIndex:10, boxShadow:"0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
+                        <div style={{ marginTop: 4, border:"1px solid #e2e8f0", borderRadius: 8, background:"#fff", maxHeight: 200, overflowY:"auto", position:"absolute", width:"calc(100% - 24px)", maxWidth:456, zIndex:10, boxShadow:"0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
                             {options.map(o => (
-                                <div key={o.id} onClick={() => { onChange(o.id); setOpen(false); }} style={{ padding:"10px 12px", fontSize:13, borderBottom:"1px solid #f1f5f9", cursor:"pointer" }}>
-                                    {o.name} <span style={{ float:"right", color:"#94a3b8" }}>{sumItems(o.items).kcal}kcal</span>
+                                <div key={o.id} onClick={() => { onChange(o.id); setOpen(false); }}
+                                    style={{ padding:"10px 12px", fontSize:13, borderBottom:"1px solid #f1f5f9", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                    <span style={{ flex:1 }}>{o.name}</span>
+                                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                        {RECIPES[o.id] && <span style={{ fontSize:10, color:"#3b82f6", background:"#eff6ff", borderRadius:10, padding:"1px 6px" }}>레시피</span>}
+                                        <span style={{ color:"#94a3b8", fontSize:12 }}>{sumItems(o.items).kcal}kcal</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -149,6 +333,7 @@
             const [selections, setSelections] = useState({});
             const [extras, setExtras] = useState({});
             const [viewDate, setViewDate] = useState(1);
+            const [recipeModal, setRecipeModal] = useState(null); // { id, name }
 
             const getDayTotals = useCallback((day) => {
                 const meals = ["bf","lu","dn","sn"];
@@ -174,8 +359,18 @@
             const dayInfo = DAYS[viewDate - 1];
             const dayTotals = getDayTotals(viewDate);
 
+            const handleViewRecipe = (id, name) => setRecipeModal({ id, name });
+            const handleCloseRecipe = () => setRecipeModal(null);
+
             return (
                 <div style={{ minHeight:"100vh", background:"#f8fafc" }}>
+                    {recipeModal && (
+                        <RecipeModal
+                            recipeId={recipeModal.id}
+                            name={recipeModal.name}
+                            onClose={handleCloseRecipe}
+                        />
+                    )}
                     <div style={{ background:"linear-gradient(135deg,#1e40af,#7c3aed)", padding:"24px 16px", color:"#fff" }}>
                         <div style={{ maxWidth:480, margin:"0 auto" }}>
                             <h1 style={{ fontSize:20, margin:0 }}>4월 식단 로그</h1>
@@ -185,7 +380,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div style={{ maxWidth:480, margin:"-20px auto 0", padding:"0 12px" }}>
                         <div style={{ background:"#fff", borderRadius:16, padding:12, boxShadow:"0 4px 6px -1px rgb(0 0 0 / 0.1)", display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
                             {[...Array(3)].map((_,i) => <div key={i} />)}
@@ -200,25 +394,23 @@
                                 );
                             })}
                         </div>
-
                         <div style={{ background:"#fff", borderRadius:16, padding:20, marginTop:16, boxShadow:"0 1px 3px rgba(0,0,0,0.1)" }}>
                             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:20 }}>
                                 <h2 style={{ fontSize:18, margin:0 }}>4월 {dayInfo.date}일 ({dayInfo.dow})</h2>
                                 <ProgressRing pct={(dayTotals.kcal/DAILY_TARGET.kcal)*100} color={dayTotals.kcal > 1900 ? "#ef4444" : "#22c55e"} size={44} stroke={4} />
                             </div>
+                            <MealSelector label="아침" options={BREAKFASTS} value={selections[`${viewDate}_bf`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_bf`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_bf`]; return n;})} accent="#f59e0b" onViewRecipe={handleViewRecipe} />
+                            <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_lu`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_lu`]; return n;})} accent="#3b82f6" onViewRecipe={handleViewRecipe} />
+                            <MealSelector label="저녁" options={DINNERS} value={selections[`${viewDate}_dn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_dn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_dn`]; return n;})} accent="#8b5cf6" onViewRecipe={handleViewRecipe} />
+                            <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_sn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_sn`]; return n;})} accent="#10b981" onViewRecipe={handleViewRecipe} />
 
-                            <MealSelector label="아침" options={BREAKFASTS} value={selections[`${viewDate}_bf`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_bf`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_bf`]; return n;})} accent="#f59e0b" />
-                            <MealSelector label="점심" options={LUNCHES} value={selections[`${viewDate}_lu`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_lu`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_lu`]; return n;})} accent="#3b82f6" />
-                            <MealSelector label="저녁" options={DINNERS} value={selections[`${viewDate}_dn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_dn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_dn`]; return n;})} accent="#8b5cf6" />
-                            <MealSelector label="간식" options={SNACKS} value={selections[`${viewDate}_sn`]} onChange={id => setSelections(p=>({...p, [`${viewDate}_sn`]:id}))} onReset={()=>setSelections(p=>{const n={...p}; delete n[`${viewDate}_sn`]; return n;})} accent="#10b981" />
-                            
                             <ExtraInput extras={extras[viewDate]||[]} onAdd={item => setExtras(p=>({...p, [viewDate]:[...(p[viewDate]||[]), item]}))} onRemove={idx => setExtras(p=>{const l=[...p[viewDate]]; l.splice(idx,1); return {...p, [viewDate]:l};})} />
                         </div>
+                        <div style={{ height: 40 }} />
                     </div>
                 </div>
             );
         }
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
